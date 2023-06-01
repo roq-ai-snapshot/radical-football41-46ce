@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["clientExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model academy {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String           @db.VarChar
+  user_id        String           @db.Uuid
+  user           user             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  player         player[]
+  training_group training_group[]
+}
+
+model communication {
+  id                                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sender_id                            String   @db.Uuid
+  receiver_id                          String   @db.Uuid
+  message                              String
+  timestamp                            DateTime @db.Timestamp(6)
+  user_communication_receiver_idTouser user     @relation("communication_receiver_idTouser", fields: [receiver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_communication_sender_idTouser   user     @relation("communication_sender_idTouser", fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model player {
+  id                         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                    String          @db.Uuid
+  academy_id                 String          @db.Uuid
+  coach_id                   String          @db.Uuid
+  performance_data           String?
+  development_goals          String?
+  academy                    academy         @relation(fields: [academy_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_player_coach_idTouser user            @relation("player_coach_idTouser", fields: [coach_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_player_user_idTouser  user            @relation("player_user_idTouser", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  player_group               player_group[]
+  training_plan              training_plan[]
+}
+
+model player_group {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  player_id      String         @db.Uuid
+  group_id       String         @db.Uuid
+  training_group training_group @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  player         player         @relation(fields: [player_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model training_group {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  academy_id   String         @db.Uuid
+  name         String         @db.VarChar
+  player_group player_group[]
+  academy      academy        @relation(fields: [academy_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model training_plan {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  coach_id    String   @db.Uuid
+  player_id   String?  @db.Uuid
+  group_id    String?  @db.Uuid
+  title       String   @db.VarChar
+  description String?
+  start_date  DateTime @db.Date
+  end_date    DateTime @db.Date
+  user        user     @relation(fields: [coach_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  player      player?  @relation(fields: [player_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model training_resource {
+  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title   String @db.VarChar
+  type    String @db.VarChar
+  content String
+}
+
+model user {
+  id                                            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  role                                          String          @db.VarChar
+  name                                          String          @db.VarChar
+  email                                         String          @unique @db.VarChar
+  password                                      String          @db.VarChar
+  roq_user_id                                   String?         @db.VarChar(255)
+  tenant_id                                     String?         @db.VarChar(255)
+  academy                                       academy[]
+  communication_communication_receiver_idTouser communication[] @relation("communication_receiver_idTouser")
+  communication_communication_sender_idTouser   communication[] @relation("communication_sender_idTouser")
+  player_player_coach_idTouser                  player[]        @relation("player_coach_idTouser")
+  player_player_user_idTouser                   player[]        @relation("player_user_idTouser")
+  training_plan                                 training_plan[]
+}
